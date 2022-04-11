@@ -73,7 +73,11 @@ If ( $connected=get-cstenant -ErrorAction SilentlyContinue)
                 Else 
                     {Write-Host "Stopping.  Please create directory to proceed"}
             }
+<<<<<<< HEAD
         
+=======
+        clv create
+>>>>>>> parent of 9b6ee5c (Delete E911 Report.ps1)
     }
 else {  Write-Host "Teams module isn't loaded.  Please load Teams Module (connect-microsoftteams)"  }
 clv connected, date, OutLocation, 911info
@@ -81,8 +85,13 @@ clv connected, date, OutLocation, 911info
 # SIG # Begin signature block
 # MIIVpgYJKoZIhvcNAQcCoIIVlzCCFZMCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
+<<<<<<< HEAD
 # AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUt4c8n4c9GfDSA5RHlfPoqdM4
 # VW+gghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
+=======
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUjdkRvVDMuILHtVZrmARCfYCv
+# yUWgghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
+>>>>>>> parent of 9b6ee5c (Delete E911 Report.ps1)
 # AQwFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVy
 # MRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEh
 # MB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTIxMDUyNTAwMDAw
@@ -183,6 +192,7 @@ clv connected, date, OutLocation, 911info
 # ZSBTaWduaW5nIENBIFIzNgIQXD41nnmZYnF2ThRsECu1mzAJBgUrDgMCGgUAoHgw
 # GAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGC
 # NwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQx
+<<<<<<< HEAD
 # FgQUlt71+7fNLeA8RNlGb47ePSXI1aQwDQYJKoZIhvcNAQEBBQAEggIAN3zwBRTB
 # Y0z1MMxQ2QvWcL/pUlYbCsTS8CCoFPwk1PDpVhoUfhBp2eCtKh9Q9LKV4ZM/BpJU
 # XJZ2DzFgIRqCKo0mnNyjvTzEnwluZfNlO/njY+l1tkOvS208/WZzbuTXF9K2Wj+K
@@ -195,4 +205,18 @@ clv connected, date, OutLocation, 911info
 # qKouu1GZpLZlw1bH4b48kqOETvwpgg9jSwKW17E8I3yXikBCiOJe2TlzHJu07W4+
 # mYzlps/nBcbLy/TCncmlT0C6NA613+Mm0gxjZ1N30nNfih6VqsdsF/eVBbTwc264
 # YZ6xMpqVtfwGV1ZOLH8+4fsGSVwEEcwQfSo=
+=======
+# FgQU3U4upHMxPK8GamNU84f1/hmknLUwDQYJKoZIhvcNAQEBBQAEggIAduSefF+K
+# 0o6GoNQT7frn5IvyzKRv4Z80Z+K1+iy66QZY0BJQju+f378R1pmnN6HD/Gen/lKj
+# 8F8/p3uGIDAtZwYdgL4Om0oCDEnKyQ/MTAKyzTZhpZ5YiXIqRA7+25APGYClLpjo
+# AhtaUccpSX2faFbLG+nQU6mGAPMyGfmxgfqhdavTR1Fj0ZJY1AorChDHlClFiW2/
+# nMqnTiZ51MQi79MyzicmcSuMqtHw9KEKRCUkhbaf60owMD1COGuxP6kod9AG6Jke
+# laxScuTeiaNuPk3zyLbXlonWbdN/bKFsxLGQ6N9EPzmM71iNRo74+o+tgvgFfkPG
+# 7PRf/GgQtFk+AkcSQFR443k5LpZ6yyFL7XrtA6DqQ7/xBJZmQoNao2/E34et6two
+# lA1OpLkELdn8FQYzoifux5vWuSfaEUqAVNOqZZq9tBWe/TGgkBzE3GMi6Itowef2
+# Hs+i4XRiRcbYXX2citNir1g9m8gLL0i7+XA0euhm339pwAhh0yTy0gGaga7MZf8K
+# cMIe7GjGqdHdI5llb405oxaIjYioG5rG23bFPyhGP7UUHaXOpMsNSgTeQBGzKAoA
+# 9hpc/jp0qsw19A1id+gDmAAk/o5zzGMX8UFdchgcB64dJT6ZPv1WQvzxbGCzC/SR
+# VXIq7shg8VIQU3W57PDVJ/mE/PrM06BYg4o=
+>>>>>>> parent of 9b6ee5c (Delete E911 Report.ps1)
 # SIG # End signature block
