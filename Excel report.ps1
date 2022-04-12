@@ -202,3 +202,105 @@ foreach ($location in $erlocations)
 $excelpackage = Open-ExcelPackage -Path $filelocation 
 $ws = Add-Worksheet -ExcelPackage $excelpackage -WorksheetName "Network Topology Site Detail" 
 $NetSitedetails | Export-Excel -ExcelPackage $excelpackage -WorksheetName $ws -AutoSize -AutoFilter
+
+# Emergency Location information Services 
+
+$locations = Get-CsOnlineLisLocation
+$LISLocDetails = @()
+Foreach ($loc in $locations)
+    {
+        $detail = New-Object PSObject
+        $detail | Add-Member NoteProperty -Name "CompanyName" -Value $loc.CompanyName
+        $detail | Add-Member NoteProperty -Name "Civicaddressid" -Value $loc.civicaddressid
+        $detail | Add-Member NoteProperty -Name "locationid" -Value $loc.LocationId
+        $detail | Add-Member NoteProperty -Name "Description" -Value $loc.Description
+        $detail | Add-Member NoteProperty -Name "location" -Value $loc.location
+        $detail | Add-Member NoteProperty -Name "HouseNumber" -Value $loc.HouseNumber
+        $detail | Add-Member NoteProperty -Name "HouseNumberSuffix" -Value $loc.HouseNumberSuffix
+        $detail | Add-Member NoteProperty -Name "PreDirectional" -Value $loc.PreDirectional
+        $detail | Add-Member NoteProperty -Name "StreetName" -Value $loc.StreetName
+        $detail | Add-Member NoteProperty -Name "PostDirectional" -Value $loc.PostDirectional
+        $detail | Add-Member NoteProperty -Name "StreetSuffix" -Value $loc.StreetSuffix
+        $detail | Add-Member NoteProperty -Name "City" -Value $loc.City
+        $detail | Add-Member NoteProperty -Name "StateOrProvince" -Value $loc.StateOrProvince
+        $detail | Add-Member NoteProperty -Name "PostalCode" -Value $loc.PostalCode
+        $detail | Add-Member NoteProperty -Name "Country" -Value $loc.CountryOrRegion
+        $detail | Add-Member NoteProperty -Name "Latitude" -Value $loc.Latitude
+        $detail | Add-Member NoteProperty -Name "Longitude" -Value $loc.Longitude
+        $LISLocDetails += $detail
+        }
+$excelpackage = Open-ExcelPackage -Path $filelocation 
+$ws = Add-Worksheet -ExcelPackage $excelpackage -WorksheetName "LIS Location " 
+$LISLocDetails | Export-Excel -ExcelPackage $excelpackage -WorksheetName $ws -AutoSize -AutoFilter
+
+#LIS Network information
+$subnets = Get-CsOnlineLisSubnet
+$subnetDetails = @()
+Foreach ($subnet in $subnets)
+    {
+        $detail = New-Object PSObject
+        
+        $detail | Add-Member NoteProperty -Name "Subnet" -Value $subnet.Subnet
+        $detail | Add-Member NoteProperty -Name "Description" -Value $subnet.Description
+        $subloc = Get-CsOnlineLisLocation -LocationId $subnet.LocationId
+        $detail | Add-Member NoteProperty -Name "Location" -Value $subloc.location
+        $detail | Add-Member NoteProperty -Name "City" -Value $subloc.city
+        $subnetDetails += $detail
+    }
+$excelpackage = Open-ExcelPackage -Path $filelocation 
+$ws = Add-Worksheet -ExcelPackage $excelpackage -WorksheetName "LIS Subnet " 
+$subnetDetails | Export-Excel -ExcelPackage $excelpackage -WorksheetName $ws -AutoSize -AutoFilter
+
+#LIS Wireless Access Point information
+$WAPs = Get-CsOnlineLisWirelessAccessPoint
+$WAPSDetails = @()
+Foreach ($WAP in $WAPs)
+    {
+        $detail = New-Object PSObject
+        $detail | Add-Member NoteProperty -Name "BSSID" -Value $WAP.BSSID
+        $detail | Add-Member NoteProperty -Name "Description" -Value $WAP.Description
+        $WAPloc = Get-CsOnlineLisLocation -LocationId $WAP.LocationId
+        $detail | Add-Member NoteProperty -Name "Location" -Value $WAPloc.location
+        $detail | Add-Member NoteProperty -Name "City" -Value $WAPloc.city
+        $WAPSDetails += $detail
+    }
+$excelpackage = Open-ExcelPackage -Path $filelocation 
+$ws = Add-Worksheet -ExcelPackage $excelpackage -WorksheetName "LIS WAP " 
+$WAPSDetails | Export-Excel -ExcelPackage $excelpackage -WorksheetName $ws -AutoSize -AutoFilter
+
+#LIS Switch information
+$Switches = Get-CsOnlineLisSwitch
+$SwitchDetails = @()
+Foreach ($Switch in $Switches)
+    {
+        $detail = New-Object PSObject
+        
+        $detail | Add-Member NoteProperty -Name "ChassisID" -Value $Switch.ChassisID
+        $detail | Add-Member NoteProperty -Name "Description" -Value $Switch.Description
+        $Switchloc = Get-CsOnlineLisLocation -LocationId $Switch.LocationId
+        $detail | Add-Member NoteProperty -Name "Location" -Value $Switchloc.location
+        $detail | Add-Member NoteProperty -Name "City" -Value $Switchloc.city
+        $SwitchDetails += $detail
+    }
+$excelpackage = Open-ExcelPackage -Path $filelocation 
+$ws = Add-Worksheet -ExcelPackage $excelpackage -WorksheetName "LIS Switch Details" 
+$SwitchDetails| Export-Excel -ExcelPackage $excelpackage -WorksheetName $ws -AutoSize -AutoFilter
+
+#LIS Port information
+$Ports = Get-CsOnlineLisPort
+$PortDetails = @()
+Foreach ($port in $ports)
+    {
+        $detail = New-Object PSObject
+        
+        $detail | Add-Member NoteProperty -Name "ChassisID" -Value $port.ChassisID
+        $detail | Add-Member NoteProperty -Name "PortID" -Value $port.PortID
+        $detail | Add-Member NoteProperty -Name "Description" -Value $port.Description
+        $portloc = Get-CsOnlineLisLocation -LocationId $port.LocationId
+        $detail | Add-Member NoteProperty -Name "Location" -Value $portloc.location
+        $detail | Add-Member NoteProperty -Name "City" -Value $portloc.city
+        $PortDetails += $detail
+    }
+$excelpackage = Open-ExcelPackage -Path $filelocation 
+$ws = Add-Worksheet -ExcelPackage $excelpackage -WorksheetName "LIS Switch Port Details" 
+$PortDetails| Export-Excel -ExcelPackage $excelpackage -WorksheetName $ws -AutoSize -AutoFilter
