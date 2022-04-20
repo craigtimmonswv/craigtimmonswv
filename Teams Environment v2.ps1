@@ -132,6 +132,33 @@ $tabname = "Dial Plan"
 Write-DataToExcel $filelocation  $details $tabname
 
 
+
+# Extracts users enablement
+Write-Host 'Getting Voice Enabled Users'
+$Details = @()
+$users =  Get-CsOnlineUser | ?  {$_.enterprisevoiceenabled -eq $true}
+        $Userdetails = @()
+        foreach ($user in $users)
+            {
+                # Creating an array to store the variables from the dial plans. 
+                $detail = New-Object PSObject
+                $detail | add-Member -MemberType NoteProperty -Name "Displayname" -Value $user.displayname
+                $detail | add-Member -MemberType NoteProperty -Name "City" -Value $user.City
+                $detail | add-Member -MemberType NoteProperty -Name "UPN" -Value $user.UserPrincipalName
+                $detail | add-Member -MemberType NoteProperty -Name "Lineuri" -Value $user.LineUri
+                $detail | add-Member -MemberType NoteProperty -Name "Dial Plan" -Value $user.TenantDialPlan
+                $detail | add-Member -MemberType NoteProperty -Name "Voice Routing Policy" -Value $user.OnlineVoiceRoutingPolicy
+                $detail | add-Member -MemberType NoteProperty -Name "EV Enabled" -Value $user.EnterpriseVoiceEnabled
+                $detail | add-Member -MemberType NoteProperty -Name "Teams Upgrade Policy" -Value $user.TeamsUpgradePolicy
+                $detail | add-Member -MemberType NoteProperty -Name "Teams Effective Mode" -Value $user.TeamsUpgradeEffectiveMode
+                $details += $detail
+
+            }
+$tabname = "EV Users"
+Write-DataToExcel $filelocation  $details $tabname
+
+
+
 # Extract Emergency Calling Policies
 Write-Host 'Getting Emergency Calling Policies'
 $Details = @()
@@ -366,5 +393,5 @@ foreach ($CQ in $CQs)
         $detail | Add-Member NoteProperty -Name "EnableTimeoutSharedVoicemailTranscription" -Value $CQ.EnableTimeoutSharedVoicemailTranscription
         $details += $detail
     }
-tabname = "Call Queue"
+$tabname = "Call Queue"
 Write-DataToExcel $filelocation  $details $tabname
