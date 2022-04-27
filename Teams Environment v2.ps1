@@ -403,8 +403,6 @@ Function Get-TeamsEnvironment
             $tabname = "Call Queue"
             Write-DataToExcel $filelocation  $details $tabname
 }
-
-
 cls
 Write-Host "This is will create an Excel Spreadsheet.  Make sure to enter the file name with .xlsx"
 
@@ -417,35 +415,17 @@ if ($XLmodule )
         If ( $connected=get-cstenant -ErrorAction SilentlyContinue)
         {
             write-host "Current Tenant:" $connected.displayname
-            Write-Host
-            if (Test-Path -Path $filelocation -ErrorAction SilentlyContinue)
-                {
-                    Get-TeamsEnvironment $filelocation
-                }
-             else 
-             {
-                Write-Host "Path not present.  "
-                $create = Read-Host "Create path (y/Y)?"
-                if ($create -eq "y" -or $create -eq "Y")
-                    {
-                        
-                        write-host "Current Tenant:" $connected.displayname
-                        Write-Host
-                        Write-Host "Running"
-                        Get-TeamsEnvironment $filelocation
-                    }
-                Else {Write-Host "Stopping.  Please create directory to proceed"}
-            }
-        } 
-        Else {Write-Host "Teams module isn't loaded.  Please load Teams Module (connect-microsoftteams)"  }
+            Get-TeamsEnvironment $filelocation
+        }
+                Else {Write-Host "Teams module isn't loaded.  Please load Teams Module (connect-microsoftteams)"  }
     }
     Else {Write-Host "ImportExcel module is not loaded"}
 
 # SIG # Begin signature block
 # MIIVpgYJKoZIhvcNAQcCoIIVlzCCFZMCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUao09L0uRMnCyDNEJitfzg/EY
-# bhqgghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0BoyRIYZuH/ARL+BG9S/mcNM
+# iFOgghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
 # AQwFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVy
 # MRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEh
 # MB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTIxMDUyNTAwMDAw
@@ -546,16 +526,16 @@ if ($XLmodule )
 # ZSBTaWduaW5nIENBIFIzNgIQXD41nnmZYnF2ThRsECu1mzAJBgUrDgMCGgUAoHgw
 # GAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGC
 # NwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQx
-# FgQUjOG2V8WU7/JkngoA3VntTTuIu50wDQYJKoZIhvcNAQEBBQAEggIAio/4R20u
-# 1zwBDfB0Y3GxsC9AAH7IhcGKxR36PwrK49zwwWdC2JSXSJJ0r+suk4AQDdEEyXPo
-# i+WHK17efFvNJjxMZU0/cUYWcsZ5hE1JFvwQ1jU53oSCnxIDJVwBQDjR8vPLu/wE
-# ScX9kXL0l8zzO7qCjiR+B0JjvNEydW+T1ropPS4fgNYz4Jbf1gLCo2NFhAFIFQod
-# 92jcbXyMH9ULNlU04EjHNX5dASob1iYgPrJQyxRiedduDTDrulQlOXike7TKlJvM
-# /9jXzG5NdZTieWz8oX40t3/KC5hBjfHG64+WeQ9FS+ggDqtROcVi8xnG4HlY2INJ
-# EGehy1JqNeKMZUP2NCjjIK/pSYaEH2YJ14Tt76r3ey/yjpUGgnw2weXoE+HtJ3SB
-# +8if6Rcle02Esym+vI7vtVsFQeKy2o2UqFw2zpKo90KvAXoKvmi31XekpwuEY7ut
-# 4a7J+PI8S+w3t6H5enTxifQkz5k/ug7aOGKovOp5J72/AIhAgLxmlziBXtcl9v4P
-# grWTA6m766TDIHlIz2z6SRWixRTMpSCG/Ht5gVWMfVQ1RKaevNcWIOiRbmcFwOW3
-# /unxRR7A5EKTgf1W4jVsJBsiI28esPcFvzqaPWTltcjWdWZIC4jBWg5avJyhA8rL
-# zWRRcP/Wt+0TkYrtz3a6JxZ+6FhSzqxanzo=
+# FgQUDDktxvfLw2UG4c1BNYkR/U1UyGEwDQYJKoZIhvcNAQEBBQAEggIALi58jYhb
+# k3E1/9zpNZcFvEb2wbMVHokq5MwN/GMYxVC/fCrPERfLA1aDHLZdeFnIymoc4wGt
+# 4AMbWfQ6ne4lycksPLaoFSqioAq/hpBvJmYnlvWUFxJidl9juelYWW1U8M3alJRK
+# mGiwltwNsreQsoZiQx1u8ckAGK/rm7w0Bwrl1GqDbcZ9tJ7KFJiYbazyg2inU2Pd
+# WLdgKCYw+cUG/4mKwPHHaU0G0hELLGTh0+igbW+jNnKvynscYz+Ln8SSnYbVKm9P
+# d7WRqgFEb68kvh52vMgB22ym5vamCk8nBN9Wv1m3mQQXxtJ1go0W7EjpQLHXteEZ
+# N9GOnwEOcGrXoBXwYJlQl/j/5DZboSnkRPy2Qy7LJm6mjGG3sRfScdQlW/ISGlmu
+# uCZF56rLxTdEb2ymBJ28u7LfS79iMEcU4I6ScSmx9ww7Ke0P0nBSjEoDe3+nitVh
+# FAK9XM3Ji4blTd8RbKyVU46VWj593CC/svxX+r3U0El1uHzKPJVnl3b0mvszze/b
+# TwBNUXjg7lpvr13k1I6ENRoG5VENpaaLqs0ExRsM6k4pur9ozQNJF7vYXY9Bk68e
+# Zhb0CqpZ9nrhaIeXXJIhMP4T7rBId8XH4Nz4DeWdklPyjAlePPLMtiFTIkcSzXEv
+# f/4qGwIQ1goOtVpxp/xXx2MyIN/0rUPk9KU=
 # SIG # End signature block
