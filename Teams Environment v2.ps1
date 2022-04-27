@@ -1,4 +1,37 @@
-﻿Function Write-DataToExcel
+﻿<#
+You will need have the "ImportExcel" Module installed for this to properly run. 
+You can get it here:
+
+https://www.powershellgallery.com/packages/ImportExcel/7.4.1
+
+To install it run: 
+Install-Module -Name ImportExcel -RequiredVersion 7.4.1
+Import-Module -Name ImportExcel
+
+This will pull the basic environment from the Teams tenant. Items it gathers is:
+
+PSTN Gateways
+PSTN Usages
+Voice Routes
+Voice Routing Policies
+Dial Plan
+Voice enabled users - this might take a while depending upon number of users
+Emergency Calling Policies
+Emergency Call Routing Policies
+Tenant Network Site Details
+LIS Locations
+LIS Network Information
+LIS WAP Information
+LIS SWitch information
+LIS Port
+Auto Attendant
+Call Queue
+
+It will place the Excel spreadsheet it in the location you enter when prompted. 
+
+#>
+
+Function Write-DataToExcel
     {
         param ($filelocation, $details, $tabname)
 
@@ -9,399 +42,410 @@
         Clv details 
 
     }
+Function Get-TeamsEnvironment
+{
+            param ($filelocation)
+            $Details = @()
+            Write-Host "Running"
+            # Extract PSTN Gateways
+            Write-Host 'Gathering Online PSTN Gateway Details'
+            $PSTNGWs = Get-CsOnlinePSTNGateway
+
+            foreach ($GW in $PSTNGWs)
+            {       
+                $detail = New-Object PSObject
+                $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $GW.Identity
+                $detail | add-Member -MemberType NoteProperty -Name "Fqdn" -Value $GW.Fqdn
+                $detail | Add-Member -MemberType NoteProperty -Name "NumberPattern" -Value $GW.SipSignalingPort
+                $detail | Add-Member -MemberType NoteProperty -Name "FailoverTimeSeconds" -Value $GW.FailoverTimeSeconds
+                $detail | Add-Member -MemberType NoteProperty -Name "ForwardCallHistory" -Value $GW.ForwardCallHistory
+                $detail | Add-Member -MemberType NoteProperty -Name "ForwardPai" -Value $GW.ForwardPai
+                $detail | Add-Member -MemberType NoteProperty -Name "SendSipOptions" -Value $GW.SendSipOptions
+                $detail | Add-Member -MemberType NoteProperty -Name "MaxConcurrentSessions" -Value $GW.MaxConcurrentSessions
+                $detail | Add-Member -MemberType NoteProperty -Name "Enabled" -Value $GW.Enabled
+                $detail | Add-Member -MemberType NoteProperty -Name "BypassMode" -Value $GW.BypassMode
+                $detail | Add-Member -MemberType NoteProperty -Name "MediaBypass" -Value $GW.MediaBypass
+                $detail | Add-Member -MemberType NoteProperty -Name "GatewaySiteId" -Value $GW.GatewaySiteId
+                $detail | Add-Member -MemberType NoteProperty -Name "PidfLoSupported" -Value $GW.PidfLoSupported
+                $detail | Add-Member -MemberType NoteProperty -Name "ProxySbc" -Value $GW.ProxySbc
+                $detail | Add-Member -MemberType NoteProperty -Name "GatewaySiteLbrEnabled" -Value $GW.GatewaySiteLbrEnabled
+                $detail | Add-Member -MemberType NoteProperty -Name "FailoverResponseCodes" -Value $GW.FailoverResponseCodes
+                $Details += $detail
+            }
+
+
+            $Details|Export-Excel -Path $filelocation -WorksheetName "PSTN Gateways" -AutoSize -AutoFilter
+            clv details
+
+            Write-Host 'Getting PSTN Usages'
+            $PSTNUSAGEs = Get-CsOnlinePstnUsage
+            $details =@()
+            foreach ($PSTNUsage in $PSTNUSAGEs)
+            {   
+                foreach ($u in $PSTNUSAGE.Usage)
+                {
+                    $detail = New-Object PSObject
+                    $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $PSTNUSAGE.Identity
+                    $detail | add-Member -MemberType NoteProperty -Name "Usage" -Value $u
+                    $details += $detail
+                }
+            }
+            $tabname = 'PSTN Usages'
+            Write-DataToExcel $filelocation  $details $tabname
+
+            Write-Host 'Getting Voice Routes'
+            $Details = @()
+            $VRs = Get-CsOnlineVoiceRoute
+            foreach ($VR in $VRs)
+            {   
+            
+                [string] $usage= $vr.OnlinePstnUsages
+                [string] $pstngw =$vr.OnlinePstnGatewayList 
+                $detail = New-Object PSObject
+                $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $vr.Name
+                $detail | Add-Member -MemberType NoteProperty -Name "NumberPattern" -Value $vr.NumberPattern
+                $detail | Add-Member -MemberType NoteProperty -Name "OnlinePstnUsages" -Value $usage
+                $detail | Add-Member -MemberType NoteProperty -Name "OnlinePstnGatewayList " -Value $pstngw
+                $details += $detail
+            }
+
+            $tabname = 'Voice Routes'
+            Write-DataToExcel $filelocation  $details $tabname
+
+            #Extracts Voice Routing Policies
+            Write-Host 'Getting Voice Routing Policies'
+            $Details = @()
+            $VRPs = Get-CsOnlineVoiceRoutingPolicy
+            foreach ($VRP in $VRPs)
+            {       
+                foreach ($usage in $vrp.OnlinePstnUsages)
+                {
+                    $detail = New-Object PSObject
+                    $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $VRP.Identity
+                    $detail | Add-Member -MemberType NoteProperty -Name "Description" -Value $VRP.Description
+                    $detail | Add-Member -MemberType NoteProperty -Name "OnlinePstnUsages" -Value $usage
+                    
+                    $Details += $detail
+                }
+            }
+
+            Write-DataToExcel $filelocation  $details $tabname
+
+            # Extracts Dial Plan info
+            Write-Host 'Getting Dial Plan Details'
+            $DPs=Get-CsTenantDialPlan
+            $Details = @()
+            foreach ($dp in $DPs)
+            {   
+                foreach ($rule in $dp.NormalizationRules)
+                    {
+                        # Creating an array to store the variables from the dial plans. 
+                        $detail = New-Object PSObject
+                        $detail | add-Member -MemberType NoteProperty -Name "Parent" -Value $dp.Identity.remove(0,4)
+                        $detail | Add-Member -MemberType NoteProperty -Name "Description" -Value $rule.Description
+                        $detail | Add-Member -MemberType NoteProperty -Name "Name" -Value $rule.Name
+                        $detail | Add-Member -MemberType NoteProperty -Name "Pattern" -Value $rule.Pattern
+                        $detail | Add-Member -MemberType NoteProperty -Name "Translation" -Value $rule.Translation
+                        $detail | Add-Member -MemberType NoteProperty -Name "IsInternalExtension" -Value $rule.IsInternalExtension
+                    
+                        # Adding array from one dial plan to an array with all the dial plans. 
+                        $Details += $detail
+                        }
+                }
+            $tabname = "Dial Plan"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            # Extracts users enablement
+            Write-Host 'Getting Voice Enabled Users'
+            $Details = @()
+            $users =  Get-CsOnlineUser | ?  {$_.enterprisevoiceenabled -eq $true}
+                    $Userdetails = @()
+                    foreach ($user in $users)
+                    {
+                        # Creating an array to store the variables from the dial plans. 
+                        $detail = New-Object PSObject
+                        $detail | add-Member -MemberType NoteProperty -Name "Displayname" -Value $user.displayname
+                        $detail | add-Member -MemberType NoteProperty -Name "City" -Value $user.City
+                        $detail | add-Member -MemberType NoteProperty -Name "UPN" -Value $user.UserPrincipalName
+                        $detail | add-Member -MemberType NoteProperty -Name "Lineuri" -Value $user.LineUri
+                        $detail | add-Member -MemberType NoteProperty -Name "Dial Plan" -Value $user.TenantDialPlan
+                        $detail | add-Member -MemberType NoteProperty -Name "Voice Routing Policy" -Value $user.OnlineVoiceRoutingPolicy
+                        $detail | add-Member -MemberType NoteProperty -Name "EV Enabled" -Value $user.EnterpriseVoiceEnabled
+                        $detail | add-Member -MemberType NoteProperty -Name "Teams Upgrade Policy" -Value $user.TeamsUpgradePolicy
+                        $detail | add-Member -MemberType NoteProperty -Name "Teams Effective Mode" -Value $user.TeamsUpgradeEffectiveMode
+                        $details += $detail
+
+                    }
+            $tabname = "EV Users"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            # Extract Emergency Calling Policies
+            Write-Host 'Getting Emergency Calling Policies'
+            $Details = @()
+            $ercallpolicies = Get-CsTeamsEmergencyCallingPolicy
+                foreach ($ercp in $ercallpolicies)
+                {
+                    $detail = New-Object PSObject
+                    $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $ercp.Identity
+                    $detail | add-Member -MemberType NoteProperty -Name "Description" -Value $ercp.Description
+                    $detail | add-Member -MemberType NoteProperty -Name "NotificationGroup" -Value $ercp.NotificationGroup
+                    $detail | add-Member -MemberType NoteProperty -Name "ExternalLocationLookupMode" -Value $ercp.ExternalLocationLookupMode
+                    $detail | add-Member -MemberType NoteProperty -Name "NotificationDialOutNumber" -Value $ercp.NotificationDialOutNumber
+                    $detail | add-Member -MemberType NoteProperty -Name "NotificationMode" -Value $ercp.NotificationMode
+                    $details += $detail  
+                }
+            $tabname = "Emergency Calling Policies"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            # Extracts Emergency Call Routing Policy
+            Write-Host 'Getting Emergency Call Routing Policies'
+            $Details = @()
+            $ecrps = Get-CsTeamsEmergencyCallRoutingPolicy
+            foreach ($ecrp in $ecrps)
+                {
+                $numbers = Get-CsTeamsEmergencyCallRoutingPolicy -Identity $ecrp.identity
+                foreach ($number in $numbers.EmergencyNumbers)
+                    {
+                        $detail = New-Object PSObject
+                        $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $ecrp.Identity
+                        $detail | add-Member -MemberType NoteProperty -Name "Description" -Value $ecrp.Description
+                        $detail | add-Member -MemberType NoteProperty -Name "emergencydialstring" -Value $number.emergencydialstring
+                        $detail | add-Member -MemberType NoteProperty -Name "EmergencyDialMask" -Value $number.emergencydialmask
+                        $detail | add-Member -MemberType NoteProperty -Name "OnlinePSTNUsage" -Value $number.OnlinePSTNUsage
+                        $detail | add-Member -MemberType NoteProperty -Name "AllowEnhancedEmergencyServices" -Value $ecrp.AllowEnhancedEmergencyServices
+                        $details  += $detail  
+                    }
+            }
+            $tabname = "Emergency Call Routing Policies"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            Write-Host 'Getting Tenant Network Site Details'
+            $Details = @()
+            $erlocations = Get-CsTenantNetworkSite
+            foreach ($location in $erlocations)
+            {
+                $networks = Get-CsTenantNetworkSubnet | ? {$_.networksiteid -eq $location.NetworkSiteID}
+                foreach ($net in $networks)
+
+                    {
+                        $detail = New-Object PSObject
+                        $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $location.Identity
+                        $detail | add-Member -MemberType NoteProperty -Name "NetworkSiteID" -Value $net.NetworkSiteID
+                        $detail | add-Member -MemberType NoteProperty -Name "Description" -Value $net.Description
+                        $detail | add-Member -MemberType NoteProperty -Name "SubnetID" -Value $net.SubnetID
+                        $detail | add-Member -MemberType NoteProperty -Name "MaskBits" -Value $net.MaskBits
+                        $detail | add-Member -MemberType NoteProperty -Name "EmergencyCallRoutingPolicy" -Value $location.EmergencyCallRoutingPolicy
+                        $detail | add-Member -MemberType NoteProperty -Name "EmergencyCallingPolicy" -Value $location.EmergencyCallingPolicy
+                        $details += $detail  
+                    }
+            }
+            $tabname = "Tenant Network Site Details"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            # Emergency Location information Services 
+            Write-Host 'Getting Emergency Location Information Services'
+            $locations = Get-CsOnlineLisLocation
+            $Details = @()
+            Foreach ($loc in $locations)
+            {
+                $detail = New-Object PSObject
+                $detail | Add-Member NoteProperty -Name "CompanyName" -Value $loc.CompanyName
+                $detail | Add-Member NoteProperty -Name "Civicaddressid" -Value $loc.civicaddressid
+                $detail | Add-Member NoteProperty -Name "locationid" -Value $loc.LocationId
+                $detail | Add-Member NoteProperty -Name "Description" -Value $loc.Description
+                $detail | Add-Member NoteProperty -Name "location" -Value $loc.location
+                $detail | Add-Member NoteProperty -Name "HouseNumber" -Value $loc.HouseNumber
+                $detail | Add-Member NoteProperty -Name "HouseNumberSuffix" -Value $loc.HouseNumberSuffix
+                $detail | Add-Member NoteProperty -Name "PreDirectional" -Value $loc.PreDirectional
+                $detail | Add-Member NoteProperty -Name "StreetName" -Value $loc.StreetName
+                $detail | Add-Member NoteProperty -Name "PostDirectional" -Value $loc.PostDirectional
+                $detail | Add-Member NoteProperty -Name "StreetSuffix" -Value $loc.StreetSuffix
+                $detail | Add-Member NoteProperty -Name "City" -Value $loc.City
+                $detail | Add-Member NoteProperty -Name "StateOrProvince" -Value $loc.StateOrProvince
+                $detail | Add-Member NoteProperty -Name "PostalCode" -Value $loc.PostalCode
+                $detail | Add-Member NoteProperty -Name "Country" -Value $loc.CountryOrRegion
+                $detail | Add-Member NoteProperty -Name "Latitude" -Value $loc.Latitude
+                $detail | Add-Member NoteProperty -Name "Longitude" -Value $loc.Longitude
+                $Details += $detail
+                }
+            $tabname = "LIS Location"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            #LIS Network information
+            Write-Host 'Getting LIS Network Information'
+            $subnets = Get-CsOnlineLisSubnet
+            $Details = @()
+            Foreach ($subnet in $subnets)
+            {
+                $detail = New-Object PSObject
+                $detail | Add-Member NoteProperty -Name "Subnet" -Value $subnet.Subnet
+                $detail | Add-Member NoteProperty -Name "Description" -Value $subnet.Description
+                $subloc = Get-CsOnlineLisLocation -LocationId $subnet.LocationId
+                $detail | Add-Member NoteProperty -Name "Location" -Value $subloc.location
+                $detail | Add-Member NoteProperty -Name "City" -Value $subloc.city
+                $Details += $detail
+            }
+            $tabname = "LIS Network "
+            Write-DataToExcel $filelocation  $details $tabname
+
+            #LIS Wireless Access Point information
+            Write-Host 'Getting LIS WAP Information'
+            $WAPs = Get-CsOnlineLisWirelessAccessPoint
+            $Details = @()
+            Foreach ($WAP in $WAPs)
+            {
+                $detail = New-Object PSObject
+                $detail | Add-Member NoteProperty -Name "BSSID" -Value $WAP.BSSID
+                $detail | Add-Member NoteProperty -Name "Description" -Value $WAP.Description
+                $WAPloc = Get-CsOnlineLisLocation -LocationId $WAP.LocationId
+                $detail | Add-Member NoteProperty -Name "Location" -Value $WAPloc.location
+                $detail | Add-Member NoteProperty -Name "City" -Value $WAPloc.city
+                $Details += $detail
+            }
+            $tabname = "LIS WAP"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            #LIS Switch information
+            Write-Host 'Getting LIS SWitch information'
+            $Switches = Get-CsOnlineLisSwitch
+            $Details = @()
+            Foreach ($Switch in $Switches)
+            {
+                $detail = New-Object PSObject
+                $detail | Add-Member NoteProperty -Name "ChassisID" -Value $Switch.ChassisID
+                $detail | Add-Member NoteProperty -Name "Description" -Value $Switch.Description
+                $Switchloc = Get-CsOnlineLisLocation -LocationId $Switch.LocationId
+                $detail | Add-Member NoteProperty -Name "Location" -Value $Switchloc.location
+                $detail | Add-Member NoteProperty -Name "City" -Value $Switchloc.city
+                $Details += $detail
+                }
+            $tabname = "LIS Switch"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            #LIS Port information
+            Write-Host 'Getting LIS Port Information'
+            $Ports = Get-CsOnlineLisPort
+            $Details = @()
+            Foreach ($port in $ports)
+                {
+                $detail = New-Object PSObject
+                $detail | Add-Member NoteProperty -Name "ChassisID" -Value $port.ChassisID
+                $detail | Add-Member NoteProperty -Name "PortID" -Value $port.PortID
+                $detail | Add-Member NoteProperty -Name "Description" -Value $port.Description
+                $portloc = Get-CsOnlineLisLocation -LocationId $port.LocationId
+                $detail | Add-Member NoteProperty -Name "Location" -Value $portloc.location
+                $detail | Add-Member NoteProperty -Name "City" -Value $portloc.city
+                $Details += $detail
+            }
+            $tabname = "LIS Port"
+            Write-DataToExcel $filelocation  $details $tabname
+            $aas= Get-CsAutoAttendant
+            foreach ($aa in $AAs)
+                {
+                foreach ($RA in $aa.ApplicationInstances)
+                    {
+                        $ResouceAct =Get-CsOnlineApplicationInstance -Identity $ra
+                        $operator = get-csonlineuser -identity $aa.Operator.Id
+                        $detail = New-Object PSObject
+                        $detail | Add-Member NoteProperty -Name "AAName" -Value $aa.name
+                        $detail | Add-Member NoteProperty -Name "Identity" -Value $aa.identity
+                        $detail | Add-Member NoteProperty -Name "Operator" -Value $operator.userprincipalname
+                        $detail | Add-Member NoteProperty -Name "Language" -Value $aa.LanguageId
+                        $detail | Add-Member NoteProperty -Name "TimeZone" -Value $aa.timezoneid
+                        $detail | Add-Member NoteProperty -Name "VoiceResponseEnabled" -Value $aa.VoiceresponseEnabled
+                        $detail | Add-Member NoteProperty -Name "ResourceAccount" -Value $ResouceAct.UserPrincipalName
+                        $detail | Add-Member NoteProperty -Name "Phone Number" -Value $ResouceAct.PhoneNumber
+                        $details += $detail
+                        clv detail
+                    }
+            }
+            $tabname = "Auto Attendant"
+            Write-DataToExcel $filelocation  $details $tabname
+
+            # Call Queues
+            $Details = @()
+            $CQs = Get-CsCallQueue 
+            foreach ($CQ in $CQs)
+                { 
+                #$ResouceAct =Get-CsOnlineApplicationInstance -Identity $ra
+                $detail = New-Object PSObject
+                $detail | Add-Member NoteProperty -Name "AAName" -Value $CQ.name
+                $detail | Add-Member NoteProperty -Name "Identity" -Value $CQ.identity
+                $detail | Add-Member NoteProperty -Name "RoutingMethod" -Value $CQ.RoutingMethod
+                $agents=@()
+                foreach ($agt in $CQ.Agents)
+                    {
+                        [string]$agtname = @((Get-CsOnlineUser -Identity $agt.ObjectId | select UserPrincipalName).UserPrincipalName  -join "," )
+                        $agents += $agtname
+                    }
+                $detail | Add-Member NoteProperty -Name "Agents" -Value $Agents
+                $detail | Add-Member NoteProperty -Name "ConferenceMode" -Value $CQ.ConferenceMode
+                $detail | Add-Member NoteProperty -Name "PresenceBasedRouting" -Value $CQ.PresenceBasedRouting
+                $detail | Add-Member NoteProperty -Name "AgentAlertTime" -Value $CQ.AgentAlertTime
+                $detail | Add-Member NoteProperty -Name "OverflowThreshold" -Value $CQ.OverflowThreshold
+                $detail | Add-Member NoteProperty -Name "OverflowAction" -Value $CQ.OverflowAction
+                $ofatarget = @()
+                foreach ($ofat in $CQ.OverflowActionTarget)
+                    {
+                        [string]$overflowtarget = @(((Get-CsCallQueue -Identity $cq.identity | select OverflowActionTarget).OverflowActionTarget).type  -join "," )
+                        $ofatarget += $overflowtarget
+                    }
+
+                $detail | Add-Member NoteProperty -Name "OverflowActionTarget" -Value $ofatarget
+                $detail | Add-Member NoteProperty -Name "OverflowSharedVoicemailTextToSpeechPrompt" -Value $CQ.OverflowSharedVoicemailTextToSpeechPrompt
+                $detail | Add-Member NoteProperty -Name "TimeoutThreshold" -Value $CQ.TimeoutThreshold
+                $detail | Add-Member NoteProperty -Name "TimeoutAction" -Value $CQ.TimeoutAction
+                $detail | Add-Member NoteProperty -Name "TimeoutActionTarget" -Value $CQ.TimeoutActionTarget
+                $detail | Add-Member NoteProperty -Name "TimeoutSharedVoicemailTextToSpeechPrompt" -Value $CQ.TimeoutSharedVoicemailTextToSpeechPrompt
+                $detail | Add-Member NoteProperty -Name "EnableTimeoutSharedVoicemailTranscription" -Value $CQ.EnableTimeoutSharedVoicemailTranscription
+                $details += $detail
+            }
+            $tabname = "Call Queue"
+            Write-DataToExcel $filelocation  $details $tabname
+}
 
 
 cls
 Write-Host "This is will create an Excel Spreadsheet.  Make sure to enter the file name with .xlsx"
-Write-Host "You will need to verify that you have installed the importexcel module"
-$Details = @()
-
-
 
 $filelocation = Read-Host "Enter Location/filename to store output (i.e c:\scripts\test.xlsx)"
-CLS
 
-# Extract PSTN Gateways
-Write-Host 'Gathering Online PSTN Gateway Details'
-$PSTNGWs = Get-CsOnlinePSTNGateway
-
-foreach ($GW in $PSTNGWs)
-    {       
-        $detail = New-Object PSObject
-        $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $GW.Identity
-        $detail | add-Member -MemberType NoteProperty -Name "Fqdn" -Value $GW.Fqdn
-        $detail | Add-Member -MemberType NoteProperty -Name "NumberPattern" -Value $GW.SipSignalingPort
-        $detail | Add-Member -MemberType NoteProperty -Name "FailoverTimeSeconds" -Value $GW.FailoverTimeSeconds
-        $detail | Add-Member -MemberType NoteProperty -Name "ForwardCallHistory" -Value $GW.ForwardCallHistory
-        $detail | Add-Member -MemberType NoteProperty -Name "ForwardPai" -Value $GW.ForwardPai
-        $detail | Add-Member -MemberType NoteProperty -Name "SendSipOptions" -Value $GW.SendSipOptions
-        $detail | Add-Member -MemberType NoteProperty -Name "MaxConcurrentSessions" -Value $GW.MaxConcurrentSessions
-        $detail | Add-Member -MemberType NoteProperty -Name "Enabled" -Value $GW.Enabled
-        $detail | Add-Member -MemberType NoteProperty -Name "BypassMode" -Value $GW.BypassMode
-        $detail | Add-Member -MemberType NoteProperty -Name "MediaBypass" -Value $GW.MediaBypass
-        $detail | Add-Member -MemberType NoteProperty -Name "GatewaySiteId" -Value $GW.GatewaySiteId
-        $detail | Add-Member -MemberType NoteProperty -Name "PidfLoSupported" -Value $GW.PidfLoSupported
-        $detail | Add-Member -MemberType NoteProperty -Name "ProxySbc" -Value $GW.ProxySbc
-        $detail | Add-Member -MemberType NoteProperty -Name "GatewaySiteLbrEnabled" -Value $GW.GatewaySiteLbrEnabled
-        $detail | Add-Member -MemberType NoteProperty -Name "FailoverResponseCodes" -Value $GW.FailoverResponseCodes
-        $Details += $detail
-    }
-
-
-$Details|Export-Excel -Path $filelocation -WorksheetName "PSTN Gateways" -AutoSize -AutoFilter
-clv details
-
-Write-Host 'Getting PSTN Usages'
-$PSTNUSAGEs = Get-CsOnlinePstnUsage
-$details =@()
-foreach ($PSTNUsage in $PSTNUSAGEs)
-    {   
-        foreach ($u in $PSTNUSAGE.Usage)
+# Determine if ImportExcel module is loaded
+$XLmodule = Get-Module -Name importexcel
+if ($XLmodule )
+    {
+        If ( $connected=get-cstenant -ErrorAction SilentlyContinue)
         {
-            $detail = New-Object PSObject
-            $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $PSTNUSAGE.Identity
-            $detail | add-Member -MemberType NoteProperty -Name "Usage" -Value $u
-            $details += $detail
-        }
-    }
-$tabname = 'PSTN Usages'
-Write-DataToExcel $filelocation  $details $tabname
-
-
-
-Write-Host 'Getting Voice Routes'
-$Details = @()
-$VRs = Get-CsOnlineVoiceRoute
-foreach ($VR in $VRs)
-    {   
-            
-        [string] $usage= $vr.OnlinePstnUsages
-        [string] $pstngw =$vr.OnlinePstnGatewayList 
-        $detail = New-Object PSObject
-        $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $vr.Name
-        $detail | Add-Member -MemberType NoteProperty -Name "NumberPattern" -Value $vr.NumberPattern
-        $detail | Add-Member -MemberType NoteProperty -Name "OnlinePstnUsages" -Value $usage
-        $detail | Add-Member -MemberType NoteProperty -Name "OnlinePstnGatewayList " -Value $pstngw
-        $details += $detail
-    }
-
-$tabname = 'Voice Routes'
-Write-DataToExcel $filelocation  $details $tabname
-
-#Extracts Voice Routing Policies
-Write-Host 'Getting Voice Routing Policies'
-$Details = @()
-$VRPs = Get-CsOnlineVoiceRoutingPolicy
-foreach ($VRP in $VRPs)
-    {       
-        foreach ($usage in $vrp.OnlinePstnUsages)
-        {
-            $detail = New-Object PSObject
-            $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $VRP.Identity
-            $detail | Add-Member -MemberType NoteProperty -Name "Description" -Value $VRP.Description
-            $detail | Add-Member -MemberType NoteProperty -Name "OnlinePstnUsages" -Value $usage
-                    
-            $Details += $detail
-        }
-    }
-
-Write-DataToExcel $filelocation  $details $tabname
-
-
-# Extracts Dial Plan info
-Write-Host 'Getting Dial Plan Details'
-$DPs=Get-CsTenantDialPlan
-$Details = @()
-foreach ($dp in $DPs)
-    {   
-        foreach ($rule in $dp.NormalizationRules)
-            {
-                # Creating an array to store the variables from the dial plans. 
-                $detail = New-Object PSObject
-                $detail | add-Member -MemberType NoteProperty -Name "Parent" -Value $dp.Identity.remove(0,4)
-                $detail | Add-Member -MemberType NoteProperty -Name "Description" -Value $rule.Description
-                $detail | Add-Member -MemberType NoteProperty -Name "Name" -Value $rule.Name
-                $detail | Add-Member -MemberType NoteProperty -Name "Pattern" -Value $rule.Pattern
-                $detail | Add-Member -MemberType NoteProperty -Name "Translation" -Value $rule.Translation
-                $detail | Add-Member -MemberType NoteProperty -Name "IsInternalExtension" -Value $rule.IsInternalExtension
-                    
-                # Adding array from one dial plan to an array with all the dial plans. 
-                $Details += $detail
+            write-host "Current Tenant:" $connected.displayname
+            Write-Host
+            if (Test-Path -Path $filelocation -ErrorAction SilentlyContinue)
+                {
+                    Get-TeamsEnvironment $filelocation
                 }
-        }
-$tabname = "Dial Plan"
-Write-DataToExcel $filelocation  $details $tabname
-
-
-
-# Extracts users enablement
-Write-Host 'Getting Voice Enabled Users'
-$Details = @()
-$users =  Get-CsOnlineUser | ?  {$_.enterprisevoiceenabled -eq $true}
-        $Userdetails = @()
-        foreach ($user in $users)
-            {
-                # Creating an array to store the variables from the dial plans. 
-                $detail = New-Object PSObject
-                $detail | add-Member -MemberType NoteProperty -Name "Displayname" -Value $user.displayname
-                $detail | add-Member -MemberType NoteProperty -Name "City" -Value $user.City
-                $detail | add-Member -MemberType NoteProperty -Name "UPN" -Value $user.UserPrincipalName
-                $detail | add-Member -MemberType NoteProperty -Name "Lineuri" -Value $user.LineUri
-                $detail | add-Member -MemberType NoteProperty -Name "Dial Plan" -Value $user.TenantDialPlan
-                $detail | add-Member -MemberType NoteProperty -Name "Voice Routing Policy" -Value $user.OnlineVoiceRoutingPolicy
-                $detail | add-Member -MemberType NoteProperty -Name "EV Enabled" -Value $user.EnterpriseVoiceEnabled
-                $detail | add-Member -MemberType NoteProperty -Name "Teams Upgrade Policy" -Value $user.TeamsUpgradePolicy
-                $detail | add-Member -MemberType NoteProperty -Name "Teams Effective Mode" -Value $user.TeamsUpgradeEffectiveMode
-                $details += $detail
-
-            }
-$tabname = "EV Users"
-Write-DataToExcel $filelocation  $details $tabname
-
-
-
-# Extract Emergency Calling Policies
-Write-Host 'Getting Emergency Calling Policies'
-$Details = @()
-$ercallpolicies = Get-CsTeamsEmergencyCallingPolicy
-    foreach ($ercp in $ercallpolicies)
-        {
-            $detail = New-Object PSObject
-            $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $ercp.Identity
-            $detail | add-Member -MemberType NoteProperty -Name "Description" -Value $ercp.Description
-            $detail | add-Member -MemberType NoteProperty -Name "NotificationGroup" -Value $ercp.NotificationGroup
-            $detail | add-Member -MemberType NoteProperty -Name "ExternalLocationLookupMode" -Value $ercp.ExternalLocationLookupMode
-            $detail | add-Member -MemberType NoteProperty -Name "NotificationDialOutNumber" -Value $ercp.NotificationDialOutNumber
-            $detail | add-Member -MemberType NoteProperty -Name "NotificationMode" -Value $ercp.NotificationMode
-            $details += $detail  
-        }
-$tabname = "Emergency Calling Policies"
-Write-DataToExcel $filelocation  $details $tabname
-
-# Extracts Emergency Call Routing Policy
-Write-Host 'Getting Emergency Call Routing Policies'
-$Details = @()
-$ecrps = Get-CsTeamsEmergencyCallRoutingPolicy
-foreach ($ecrp in $ecrps)
-    {
-        $numbers = Get-CsTeamsEmergencyCallRoutingPolicy -Identity $ecrp.identity
-        foreach ($number in $numbers.EmergencyNumbers)
-            {
-                $detail = New-Object PSObject
-                $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $ecrp.Identity
-                $detail | add-Member -MemberType NoteProperty -Name "Description" -Value $ecrp.Description
-                $detail | add-Member -MemberType NoteProperty -Name "emergencydialstring" -Value $number.emergencydialstring
-                $detail | add-Member -MemberType NoteProperty -Name "EmergencyDialMask" -Value $number.emergencydialmask
-                $detail | add-Member -MemberType NoteProperty -Name "OnlinePSTNUsage" -Value $number.OnlinePSTNUsage
-                $detail | add-Member -MemberType NoteProperty -Name "AllowEnhancedEmergencyServices" -Value $ecrp.AllowEnhancedEmergencyServices
-                $details  += $detail  
-            }
-    }
-$tabname = "Emergency Cal Routing Policies"
-Write-DataToExcel $filelocation  $details $tabname
-
-Write-Host 'Getting Tenant Network Site Details'
-$Details = @()
-$erlocations = Get-CsTenantNetworkSite
-foreach ($location in $erlocations)
-    {
-        
-        $networks = Get-CsTenantNetworkSubnet | ? {$_.networksiteid -eq $location.NetworkSiteID}
-        foreach ($net in $networks)
-
-            {
-                $detail = New-Object PSObject
-                $detail | add-Member -MemberType NoteProperty -Name "Identity" -Value $location.Identity
-                $detail | add-Member -MemberType NoteProperty -Name "NetworkSiteID" -Value $net.NetworkSiteID
-                $detail | add-Member -MemberType NoteProperty -Name "Description" -Value $net.Description
-                $detail | add-Member -MemberType NoteProperty -Name "SubnetID" -Value $net.SubnetID
-                $detail | add-Member -MemberType NoteProperty -Name "MaskBits" -Value $net.MaskBits
-                $detail | add-Member -MemberType NoteProperty -Name "EmergencyCallRoutingPolicy" -Value $location.EmergencyCallRoutingPolicy
-                $detail | add-Member -MemberType NoteProperty -Name "EmergencyCallingPolicy" -Value $location.EmergencyCallingPolicy
-                $details += $detail  
-            }
-    }
-$tabname = "Tenant Network Site Details"
-Write-DataToExcel $filelocation  $details $tabname
-
-# Emergency Location information Services 
-Write-Host 'Getting Emergency Location Information Services'
-$locations = Get-CsOnlineLisLocation
-$Details = @()
-Foreach ($loc in $locations)
-    {
-        $detail = New-Object PSObject
-        $detail | Add-Member NoteProperty -Name "CompanyName" -Value $loc.CompanyName
-        $detail | Add-Member NoteProperty -Name "Civicaddressid" -Value $loc.civicaddressid
-        $detail | Add-Member NoteProperty -Name "locationid" -Value $loc.LocationId
-        $detail | Add-Member NoteProperty -Name "Description" -Value $loc.Description
-        $detail | Add-Member NoteProperty -Name "location" -Value $loc.location
-        $detail | Add-Member NoteProperty -Name "HouseNumber" -Value $loc.HouseNumber
-        $detail | Add-Member NoteProperty -Name "HouseNumberSuffix" -Value $loc.HouseNumberSuffix
-        $detail | Add-Member NoteProperty -Name "PreDirectional" -Value $loc.PreDirectional
-        $detail | Add-Member NoteProperty -Name "StreetName" -Value $loc.StreetName
-        $detail | Add-Member NoteProperty -Name "PostDirectional" -Value $loc.PostDirectional
-        $detail | Add-Member NoteProperty -Name "StreetSuffix" -Value $loc.StreetSuffix
-        $detail | Add-Member NoteProperty -Name "City" -Value $loc.City
-        $detail | Add-Member NoteProperty -Name "StateOrProvince" -Value $loc.StateOrProvince
-        $detail | Add-Member NoteProperty -Name "PostalCode" -Value $loc.PostalCode
-        $detail | Add-Member NoteProperty -Name "Country" -Value $loc.CountryOrRegion
-        $detail | Add-Member NoteProperty -Name "Latitude" -Value $loc.Latitude
-        $detail | Add-Member NoteProperty -Name "Longitude" -Value $loc.Longitude
-        $Details += $detail
-        }
-$tabname = "LIS Location"
-Write-DataToExcel $filelocation  $details $tabname
-
-
-#LIS Network information
-Write-Host 'Getting LIS Network Information'
-$subnets = Get-CsOnlineLisSubnet
-$Details = @()
-Foreach ($subnet in $subnets)
-    {
-        $detail = New-Object PSObject
-        $detail | Add-Member NoteProperty -Name "Subnet" -Value $subnet.Subnet
-        $detail | Add-Member NoteProperty -Name "Description" -Value $subnet.Description
-        $subloc = Get-CsOnlineLisLocation -LocationId $subnet.LocationId
-        $detail | Add-Member NoteProperty -Name "Location" -Value $subloc.location
-        $detail | Add-Member NoteProperty -Name "City" -Value $subloc.city
-        $Details += $detail
-    }
-$tabname = "LIS Network "
-Write-DataToExcel $filelocation  $details $tabname
-
-
-#LIS Wireless Access Point information
-Write-Host 'Getting LIS WAP Information'
-$WAPs = Get-CsOnlineLisWirelessAccessPoint
-$Details = @()
-Foreach ($WAP in $WAPs)
-    {
-        $detail = New-Object PSObject
-        $detail | Add-Member NoteProperty -Name "BSSID" -Value $WAP.BSSID
-        $detail | Add-Member NoteProperty -Name "Description" -Value $WAP.Description
-        $WAPloc = Get-CsOnlineLisLocation -LocationId $WAP.LocationId
-        $detail | Add-Member NoteProperty -Name "Location" -Value $WAPloc.location
-        $detail | Add-Member NoteProperty -Name "City" -Value $WAPloc.city
-        $Details += $detail
-    }
-$tabname = "LIS WAP"
-Write-DataToExcel $filelocation  $details $tabname
-
-
-#LIS Switch information
-Write-Host 'Getting LIS SWitch information'
-$Switches = Get-CsOnlineLisSwitch
-$Details = @()
-Foreach ($Switch in $Switches)
-    {
-        $detail = New-Object PSObject
-        $detail | Add-Member NoteProperty -Name "ChassisID" -Value $Switch.ChassisID
-        $detail | Add-Member NoteProperty -Name "Description" -Value $Switch.Description
-        $Switchloc = Get-CsOnlineLisLocation -LocationId $Switch.LocationId
-        $detail | Add-Member NoteProperty -Name "Location" -Value $Switchloc.location
-        $detail | Add-Member NoteProperty -Name "City" -Value $Switchloc.city
-        $Details += $detail
-    }
-$tabname = "LIS Switch"
-Write-DataToExcel $filelocation  $details $tabname
-
-
-#LIS Port information
-Write-Host 'Getting LIS Port Information'
-$Ports = Get-CsOnlineLisPort
-$Details = @()
-Foreach ($port in $ports)
-    {
-        $detail = New-Object PSObject
-        $detail | Add-Member NoteProperty -Name "ChassisID" -Value $port.ChassisID
-        $detail | Add-Member NoteProperty -Name "PortID" -Value $port.PortID
-        $detail | Add-Member NoteProperty -Name "Description" -Value $port.Description
-        $portloc = Get-CsOnlineLisLocation -LocationId $port.LocationId
-        $detail | Add-Member NoteProperty -Name "Location" -Value $portloc.location
-        $detail | Add-Member NoteProperty -Name "City" -Value $portloc.city
-        $Details += $detail
-    }
-$tabname = "LIS Port"
-Write-DataToExcel $filelocation  $details $tabname
-
-foreach ($aa in $AAs)
-    {
-        foreach ($RA in $aa.ApplicationInstances)
-            {
-                $ResouceAct =Get-CsOnlineApplicationInstance -Identity $ra
-                $operator = get-csonlineuser -identity $aa.Operator.Id
-                $detail = New-Object PSObject
-                $detail | Add-Member NoteProperty -Name "AAName" -Value $aa.name
-                $detail | Add-Member NoteProperty -Name "Identity" -Value $aa.identity
-                $detail | Add-Member NoteProperty -Name "Operator" -Value $operator.userprincipalname
-                $detail | Add-Member NoteProperty -Name "Language" -Value $aa.LanguageId
-                $detail | Add-Member NoteProperty -Name "TimeZone" -Value $aa.timezoneid
-                $detail | Add-Member NoteProperty -Name "VoiceResponseEnabled" -Value $aa.VoiceresponseEnabled
-                $cflows = @()
-                foreach ($CF in $AA)
+             else 
+             {
+                Write-Host "Path not present.  "
+                $create = Read-Host "Create path (y/Y)?"
+                if ($create -eq "y" -or $create -eq "Y")
                     {
-                        [string]$callflows = @((Get-CsAutoAttendant -Identity $aa.Identity | select callflows).callflows.name -join "," )
-                        $cflows += $callflows
+                        
+                        write-host "Current Tenant:" $connected.displayname
+                        Write-Host
+                        Write-Host "Running"
+                        Get-TeamsEnvironment $filelocation
                     }
-                $detail | Add-Member NoteProperty -Name "CallFlows" -Value $cflows
-                $detail | Add-Member NoteProperty -Name "ResourceAccount" -Value $ResouceAct.UserPrincipalName
-                $detail | Add-Member NoteProperty -Name "Phone Number" -Value $ResouceAct.PhoneNumber
-                $details += $detail
-                clv detail
+                Else {Write-Host "Stopping.  Please create directory to proceed"}
             }
+        } 
+        Else {Write-Host "Teams module isn't loaded.  Please load Teams Module (connect-microsoftteams)"  }
     }
-$tabname = "Auto Attendant"
-Write-DataToExcel $filelocation  $details $tabname
-
-# Call Queues
-$Details = @()
-$CQs = Get-CsCallQueue 
-foreach ($CQ in $CQs)
-    { 
-        #$ResouceAct =Get-CsOnlineApplicationInstance -Identity $ra
-        $detail = New-Object PSObject
-        $detail | Add-Member NoteProperty -Name "AAName" -Value $CQ.name
-        $detail | Add-Member NoteProperty -Name "Identity" -Value $CQ.identity
-        $detail | Add-Member NoteProperty -Name "RoutingMethod" -Value $CQ.RoutingMethod
-        $agents=@()
-        foreach ($agt in $CQ.Agents)
-            {
-                [string]$agtname = @((Get-CsOnlineUser -Identity $agt.ObjectId | select UserPrincipalName).UserPrincipalName  -join "," )
-                $agents += $agtname
-            }
-                
-        $detail | Add-Member NoteProperty -Name "Agents" -Value $Agents
-        $detail | Add-Member NoteProperty -Name "ConferenceMode" -Value $CQ.ConferenceMode
-        $detail | Add-Member NoteProperty -Name "PresenceBasedRouting" -Value $CQ.PresenceBasedRouting
-        $detail | Add-Member NoteProperty -Name "AgentAlertTime" -Value $CQ.AgentAlertTime
-        $detail | Add-Member NoteProperty -Name "OverflowThreshold" -Value $CQ.OverflowThreshold
-        $detail | Add-Member NoteProperty -Name "OverflowAction" -Value $CQ.OverflowAction
-        $ofatarget = @()
-        foreach ($ofat in $CQ.OverflowActionTarget)
-            {
-                [string]$overflowtarget = @(((Get-CsCallQueue -Identity 90bee1bd-fb44-4d00-be47-eed5f6cc4a9b | select OverflowActionTarget).OverflowActionTarget).type  -join "," )
-                $ofatarget += $overflowtarget
-            }
-
-        $detail | Add-Member NoteProperty -Name "OverflowActionTarget" -Value $ofatarget
-        $detail | Add-Member NoteProperty -Name "OverflowSharedVoicemailTextToSpeechPrompt" -Value $CQ.OverflowSharedVoicemailTextToSpeechPrompt
-        $detail | Add-Member NoteProperty -Name "TimeoutThreshold" -Value $CQ.TimeoutThreshold
-        $detail | Add-Member NoteProperty -Name "TimeoutAction" -Value $CQ.TimeoutAction
-        $detail | Add-Member NoteProperty -Name "TimeoutActionTarget" -Value $CQ.TimeoutActionTarget
-        $detail | Add-Member NoteProperty -Name "TimeoutSharedVoicemailTextToSpeechPrompt" -Value $CQ.TimeoutSharedVoicemailTextToSpeechPrompt
-        $detail | Add-Member NoteProperty -Name "EnableTimeoutSharedVoicemailTranscription" -Value $CQ.EnableTimeoutSharedVoicemailTranscription
-        $details += $detail
-    }
-$tabname = "Call Queue"
-Write-DataToExcel $filelocation  $details $tabname
+    Else {Write-Host "ImportExcel module is not loaded"}
 
 # SIG # Begin signature block
 # MIIVpgYJKoZIhvcNAQcCoIIVlzCCFZMCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUKQ+YYiGINfXd8uLxn5UTVOKd
-# LW2gghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUao09L0uRMnCyDNEJitfzg/EY
+# bhqgghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
 # AQwFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVy
 # MRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEh
 # MB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTIxMDUyNTAwMDAw
@@ -502,16 +546,16 @@ Write-DataToExcel $filelocation  $details $tabname
 # ZSBTaWduaW5nIENBIFIzNgIQXD41nnmZYnF2ThRsECu1mzAJBgUrDgMCGgUAoHgw
 # GAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGC
 # NwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQx
-# FgQUpdUpt4z550pnZANDR2/qUDxn03UwDQYJKoZIhvcNAQEBBQAEggIAEokKfRWg
-# R1CW5G6ol3K4B8dcJvtqcKhBqOCK6/o8kHEqKihqJKylX/PyhMNTecvkb3juF5JS
-# 8NHxYXVGaVLDrPEltLrTpAgq0Rafi+kn/v34XJthC1unFw8smw/gW6VrFDYR1AMk
-# NaUf6lL5p1wodWs8WU5O5TvPCvN7BrT5Ln4qVdy0uSrGLYIwF4m6FaYezf8XiJ17
-# Qs6z2IrPskDemjHUuKfzQ7+VZoJBgImdvdjgOyuY0dJnWgiLiWt4pFklYK6MTsKs
-# 6lOueYxxNnAWallnMTeYQWZJ797UMnhFz2j49LSHtIpc6gwYEtzTNKSJAzKcYRuG
-# OpwGmSy9kenPtvJR7DwONRPPh/pImDRRp36u0EuJla8NAMpMqEF/HamlhgQfgV//
-# 874kJzkq+jzZ5rn/Zc/aQ3398FOKwADxu+3oIC1RNIEdevMr4HpmKkVR7h+be9Lk
-# lkHYdkp/gCug3MBKCA1S5lWxqHskvOxYnfT1fvIiykjquqG3OzaGxgkearnoqX96
-# ypKLQocwPxwrWBnY54SmBIRiM6+4Rlbe1XDn6Haf1a3Vc3YwlB29lCLBq0jEZcFK
-# jGmBlRvIHyr24pJOKcwYvTqUN7d8W3YU5lNWPUAU/ygF0LJ4GvAN8oHeAHFiH5hf
-# OiE6ciyWO1pZVZbR6D4i+pK4XkT8dZRTasg=
+# FgQUjOG2V8WU7/JkngoA3VntTTuIu50wDQYJKoZIhvcNAQEBBQAEggIAio/4R20u
+# 1zwBDfB0Y3GxsC9AAH7IhcGKxR36PwrK49zwwWdC2JSXSJJ0r+suk4AQDdEEyXPo
+# i+WHK17efFvNJjxMZU0/cUYWcsZ5hE1JFvwQ1jU53oSCnxIDJVwBQDjR8vPLu/wE
+# ScX9kXL0l8zzO7qCjiR+B0JjvNEydW+T1ropPS4fgNYz4Jbf1gLCo2NFhAFIFQod
+# 92jcbXyMH9ULNlU04EjHNX5dASob1iYgPrJQyxRiedduDTDrulQlOXike7TKlJvM
+# /9jXzG5NdZTieWz8oX40t3/KC5hBjfHG64+WeQ9FS+ggDqtROcVi8xnG4HlY2INJ
+# EGehy1JqNeKMZUP2NCjjIK/pSYaEH2YJ14Tt76r3ey/yjpUGgnw2weXoE+HtJ3SB
+# +8if6Rcle02Esym+vI7vtVsFQeKy2o2UqFw2zpKo90KvAXoKvmi31XekpwuEY7ut
+# 4a7J+PI8S+w3t6H5enTxifQkz5k/ug7aOGKovOp5J72/AIhAgLxmlziBXtcl9v4P
+# grWTA6m766TDIHlIz2z6SRWixRTMpSCG/Ht5gVWMfVQ1RKaevNcWIOiRbmcFwOW3
+# /unxRR7A5EKTgf1W4jVsJBsiI28esPcFvzqaPWTltcjWdWZIC4jBWg5avJyhA8rL
+# zWRRcP/Wt+0TkYrtz3a6JxZ+6FhSzqxanzo=
 # SIG # End signature block
