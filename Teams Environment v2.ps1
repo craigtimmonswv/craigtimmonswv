@@ -339,17 +339,18 @@ Function Get-TeamsEnvironment
             }
             $tabname = "LIS Port"
             Write-DataToExcel $filelocation  $details $tabname
+            
+            
             $aas= Get-CsAutoAttendant
+            $details =@()
             foreach ($aa in $AAs)
                 {
                 foreach ($RA in $aa.ApplicationInstances)
                     {
                         $ResouceAct =Get-CsOnlineApplicationInstance -Identity $ra
-                        $operator = get-csonlineuser -identity $aa.Operator.Id
                         $detail = New-Object PSObject
                         $detail | Add-Member NoteProperty -Name "AAName" -Value $aa.name
                         $detail | Add-Member NoteProperty -Name "Identity" -Value $aa.identity
-                        $detail | Add-Member NoteProperty -Name "Operator" -Value $operator.userprincipalname
                         $detail | Add-Member NoteProperty -Name "Language" -Value $aa.LanguageId
                         $detail | Add-Member NoteProperty -Name "TimeZone" -Value $aa.timezoneid
                         $detail | Add-Member NoteProperty -Name "VoiceResponseEnabled" -Value $aa.VoiceresponseEnabled
@@ -367,31 +368,17 @@ Function Get-TeamsEnvironment
             $CQs = Get-CsCallQueue 
             foreach ($CQ in $CQs)
                 { 
-                #$ResouceAct =Get-CsOnlineApplicationInstance -Identity $ra
                 $detail = New-Object PSObject
                 $detail | Add-Member NoteProperty -Name "AAName" -Value $CQ.name
                 $detail | Add-Member NoteProperty -Name "Identity" -Value $CQ.identity
                 $detail | Add-Member NoteProperty -Name "RoutingMethod" -Value $CQ.RoutingMethod
-                $agents=@()
-                foreach ($agt in $CQ.Agents)
-                    {
-                        [string]$agtname = @((Get-CsOnlineUser -Identity $agt.ObjectId | select UserPrincipalName).UserPrincipalName  -join "," )
-                        $agents += $agtname
-                    }
-                $detail | Add-Member NoteProperty -Name "Agents" -Value $Agents
+                
                 $detail | Add-Member NoteProperty -Name "ConferenceMode" -Value $CQ.ConferenceMode
                 $detail | Add-Member NoteProperty -Name "PresenceBasedRouting" -Value $CQ.PresenceBasedRouting
                 $detail | Add-Member NoteProperty -Name "AgentAlertTime" -Value $CQ.AgentAlertTime
                 $detail | Add-Member NoteProperty -Name "OverflowThreshold" -Value $CQ.OverflowThreshold
                 $detail | Add-Member NoteProperty -Name "OverflowAction" -Value $CQ.OverflowAction
-                $ofatarget = @()
-                foreach ($ofat in $CQ.OverflowActionTarget)
-                    {
-                        [string]$overflowtarget = @(((Get-CsCallQueue -Identity $cq.identity | select OverflowActionTarget).OverflowActionTarget).type  -join "," )
-                        $ofatarget += $overflowtarget
-                    }
-
-                $detail | Add-Member NoteProperty -Name "OverflowActionTarget" -Value $ofatarget
+                
                 $detail | Add-Member NoteProperty -Name "OverflowSharedVoicemailTextToSpeechPrompt" -Value $CQ.OverflowSharedVoicemailTextToSpeechPrompt
                 $detail | Add-Member NoteProperty -Name "TimeoutThreshold" -Value $CQ.TimeoutThreshold
                 $detail | Add-Member NoteProperty -Name "TimeoutAction" -Value $CQ.TimeoutAction
@@ -424,8 +411,8 @@ if ($XLmodule )
 # SIG # Begin signature block
 # MIIVpgYJKoZIhvcNAQcCoIIVlzCCFZMCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0BoyRIYZuH/ARL+BG9S/mcNM
-# iFOgghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUE+fLPdAQYJO87/g8ffVfurCu
+# VZGgghIHMIIFbzCCBFegAwIBAgIQSPyTtGBVlI02p8mKidaUFjANBgkqhkiG9w0B
 # AQwFADB7MQswCQYDVQQGEwJHQjEbMBkGA1UECAwSR3JlYXRlciBNYW5jaGVzdGVy
 # MRAwDgYDVQQHDAdTYWxmb3JkMRowGAYDVQQKDBFDb21vZG8gQ0EgTGltaXRlZDEh
 # MB8GA1UEAwwYQUFBIENlcnRpZmljYXRlIFNlcnZpY2VzMB4XDTIxMDUyNTAwMDAw
@@ -526,16 +513,16 @@ if ($XLmodule )
 # ZSBTaWduaW5nIENBIFIzNgIQXD41nnmZYnF2ThRsECu1mzAJBgUrDgMCGgUAoHgw
 # GAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGC
 # NwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQx
-# FgQUDDktxvfLw2UG4c1BNYkR/U1UyGEwDQYJKoZIhvcNAQEBBQAEggIALi58jYhb
-# k3E1/9zpNZcFvEb2wbMVHokq5MwN/GMYxVC/fCrPERfLA1aDHLZdeFnIymoc4wGt
-# 4AMbWfQ6ne4lycksPLaoFSqioAq/hpBvJmYnlvWUFxJidl9juelYWW1U8M3alJRK
-# mGiwltwNsreQsoZiQx1u8ckAGK/rm7w0Bwrl1GqDbcZ9tJ7KFJiYbazyg2inU2Pd
-# WLdgKCYw+cUG/4mKwPHHaU0G0hELLGTh0+igbW+jNnKvynscYz+Ln8SSnYbVKm9P
-# d7WRqgFEb68kvh52vMgB22ym5vamCk8nBN9Wv1m3mQQXxtJ1go0W7EjpQLHXteEZ
-# N9GOnwEOcGrXoBXwYJlQl/j/5DZboSnkRPy2Qy7LJm6mjGG3sRfScdQlW/ISGlmu
-# uCZF56rLxTdEb2ymBJ28u7LfS79iMEcU4I6ScSmx9ww7Ke0P0nBSjEoDe3+nitVh
-# FAK9XM3Ji4blTd8RbKyVU46VWj593CC/svxX+r3U0El1uHzKPJVnl3b0mvszze/b
-# TwBNUXjg7lpvr13k1I6ENRoG5VENpaaLqs0ExRsM6k4pur9ozQNJF7vYXY9Bk68e
-# Zhb0CqpZ9nrhaIeXXJIhMP4T7rBId8XH4Nz4DeWdklPyjAlePPLMtiFTIkcSzXEv
-# f/4qGwIQ1goOtVpxp/xXx2MyIN/0rUPk9KU=
+# FgQU/tkn8EKh+z0MIN/6QXe6TYQkH8EwDQYJKoZIhvcNAQEBBQAEggIAJ9rUtcjv
+# TvnqpGw27nfPU0ZYx7GuMSWAsCiQWBudjl2SCpo2M+HBmlaYGGkXz3rs57fVhRbc
+# U9kwnbVBRLKPKWdY7BasEKV+7INZxRucJqsvDjq6qC61KSV97oVOFDQ5UM11WGuh
+# i2jBQCW0+ZzGJzY1mrz7z60cWtcH+JRSna9IuiRGck8oG5r42XigeRxdjfNhy0ey
+# ko7KoizufsPknXmxhOnxPtuz3SMFR0jde1UCsHwcIUinqNnCTWXULYYFgxFdfBMx
+# C2LaecL6cy9fA6JjbsS8Xe6560G+Ir8Xt3WtwVkLC/nq/ugjE8OCfS6i3+9qDOe6
+# 3M8eN2P8fGxvf32e0IBwb/e/tclrSXuCnhxZIP/jIVkxX5gBzSCx6v6w83vuVftK
+# MZBrNSXrh1Lx1s7U8/KZwapg30QbN8PryMbGfeQKREYqYCahWbHhSBsQagUDz5y7
+# i1CDnR12o/mPRp0WKdEKa07OmeYMFlBP3ShJ9OXYGaPg1RoEz0OCgA0RUXxL/qid
+# k+gMTZue7yxZ0AVdIboec3zXjObequ9ylg8DxTCf0InesGQV/jL3T7t0IjLB0Mm2
+# ALKHuoB6DgEhPRyO6vmGu/qg4sJ32GQhEiR3TaoQ2Wi4/YM3RTq6SxJNRELBEkqZ
+# ewxMfyE70aCzI4lqvPeH+RF2n/qi6Zf22Vc=
 # SIG # End signature block
